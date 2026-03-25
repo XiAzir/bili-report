@@ -1,0 +1,43 @@
+{
+  "request": {
+    "url": "https://api.example.com/x/v2/reply/main",
+    "method": "GET",
+    "headers": {
+      "cookie": "REPLACE_ME",
+      "referer": "https://t.bilibili.com/REPLACE_DYNAMIC_ID",
+      "user-agent": "REPLACE_ME",
+      "x-csrf-token": "REPLACE_IF_NEEDED"
+    },
+    "query": {
+      "type": 17,
+      "oid": "REPLACE_DYNAMIC_ID",
+      "ps": 20,
+      "cursor": ""
+    },
+    "body": {}
+  },
+  "pagination": {
+    "mode": "cursor",
+    "initialValue": "",
+    "target": "query.cursor",
+    "nextCursorPath": "data.cursor.next",
+    "hasMorePath": "data.cursor.has_more",
+    "maxPages": 3
+  },
+  "response": {
+    "commentsPath": "data.replies",
+    "repliesPath": "replies",
+    "fields": {
+      "comment_id": "rpid",
+      "root_comment_id": "root",
+      "reply_comment_id": "parent",
+      "uid": "member.mid",
+      "uname": "member.uname",
+      "ctime": "ctime",
+      "content_raw": "content.message",
+      "picture_urls": "content.pictures",
+      "like_count": "like",
+      "source_url": "jump_url"
+    }
+  }
+}
