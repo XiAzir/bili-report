@@ -20,20 +20,26 @@ function compactText(text) {
   return normalizeText(text).replace(/[^\p{Letter}\p{Number}\u4e00-\u9fa5]+/gu, "");
 }
 
-function getRepeatCount(compact) {
+function countRepeatedChunksAt(compact, start, size) {
+  const chunk = compact.slice(start, start + size);
+  if (!chunk) {
+    return 1;
+  }
+  let count = 0;
+  let cursor = start;
+  while (compact.slice(cursor, cursor + size) === chunk) {
+    count += 1;
+    cursor += size;
+  }
+  return count;
+}
+
+export function getRepeatCount(compact) {
   let best = 1;
   for (let size = 2; size <= 12; size += 1) {
-    const chunk = compact.slice(0, size);
-    if (!chunk) {
-      continue;
+    for (let start = 0; start <= compact.length - size; start += 1) {
+      best = Math.max(best, countRepeatedChunksAt(compact, start, size));
     }
-    let count = 0;
-    let cursor = 0;
-    while (compact.slice(cursor, cursor + size) === chunk) {
-      count += 1;
-      cursor += size;
-    }
-    best = Math.max(best, count);
   }
   return best;
 }

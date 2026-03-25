@@ -64,6 +64,14 @@ function ensureOptions(options) {
   if (!options.oid) throw new Error("--oid <dynamicCommentId> 是必填项（动态评论区 ID，非评论 rpid）");
 }
 
+function markRowsReported(rows, rpid) {
+  return rows.map((row) => (
+    row.comment_id === rpid
+      ? { ...row, status: "reported" }
+      : row
+  ));
+}
+
 export async function runReportCommand(options) {
   ensureOptions(options);
 
@@ -139,11 +147,7 @@ export async function runReportCommand(options) {
       if (result.code === 0) {
         const toast = result.data?.toast ?? "";
         process.stdout.write(`成功 ${toast ? `(${toast})` : ""}\n`);
-        // 更新行状态
-        const originalIndex = rows.findIndex((r) => r.comment_id === rpid);
-        if (originalIndex !== -1) {
-          rows[originalIndex] = { ...rows[originalIndex], status: "reported" };
-        }
+        rows.splice(0, rows.length, ...markRowsReported(rows, rpid));
         successCount += 1;
       } else {
         process.stdout.write(`失败 code=${result.code} msg=${result.message}\n`);

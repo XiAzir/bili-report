@@ -23,6 +23,7 @@ function detectEvidenceTypes(text, pictureUrls) {
   if (FLAMEBAIT_PATTERNS.some((pattern) => pattern.test(text))) {
     matches.push("hate_flamebait");
   }
+  // 这里不是图片内容识别，只是在“存在图片”前提下用文本关键词辅助标记低俗/猎奇风险。
   if (pictureUrls && SHOCK_PATTERNS.some((pattern) => pattern.test(text))) {
     matches.push("shock_image");
   }

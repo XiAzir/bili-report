@@ -2,6 +2,7 @@ import { readTextFile, writeTextFile } from "../shared/fs.js";
 import { parseCsv, toCsv } from "../shared/csv.js";
 import { REVIEW_HEADERS } from "../shared/reasons.js";
 import { readdir, unlink } from "node:fs/promises";
+import { join } from "node:path";
 
 const DEFAULT_SLICE_SIZE = 200;
 const DEFAULT_OUT_DIR = "data/slices";
@@ -32,7 +33,7 @@ export async function runSliceCommand(options) {
   const existingFiles = await readdir(outDir).catch(() => []);
   for (const file of existingFiles) {
     if (/^slice-\d+\.csv$/u.test(file)) {
-      await unlink(`${outDir}/${file}`);
+      await unlink(join(outDir, file));
     }
   }
 

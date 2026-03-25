@@ -18,15 +18,6 @@ export const REVIEW_HEADERS = [
   "source_url"
 ];
 
-export const DEFAULT_REASONS = [
-  "doxxing",
-  "abuse",
-  "spam",
-  "hate_flamebait",
-  "shock_image",
-  "other"
-];
-
 // B 站举报原因 ID 映射（来自 /x/v2/reply/report/metadata 接口）
 export const BILI_REASON_MAP = {
   doxxing:         { id: 15, label: "传播他人隐私信息" },

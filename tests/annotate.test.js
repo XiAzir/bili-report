@@ -20,3 +20,20 @@ test("annotate rejects invalid reason", async () => {
   );
   await rm(csvPath);
 });
+
+test("annotate accepts allowed reason from global reason list when config omits allowedReasons", async () => {
+  const csvPath = new URL("./annotate-allowed.csv", import.meta.url);
+  const reasonMapPath = new URL("./annotate-reason-map.json", import.meta.url);
+  await writeFile(
+    csvPath,
+    "comment_id,reason,manual_review,status\n1,porn,pending,queued\n",
+    "utf8"
+  );
+  await writeFile(reasonMapPath, JSON.stringify({ reasonDisplayMap: {} }), "utf8");
+  await runAnnotateCommand({
+    input: csvPath,
+    "reason-map": reasonMapPath
+  });
+  await rm(csvPath);
+  await rm(reasonMapPath);
+});

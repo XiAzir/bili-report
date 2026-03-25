@@ -5,10 +5,11 @@ import { runUiCommand } from "./ui/server.js";
 import { runSliceCommand } from "./slicer/sliceComments.js";
 import { runMergeApprovedCommand } from "./merger/mergeApproved.js";
 import { runReportCommand } from "./reporter/submitReports.js";
+import { pathToFileURL } from "node:url";
 
 const HELP_TEXT = `
 Usage:
-  node src/cli.js collect --url <dynamicUrl> --out <basePath> [--cookie-file <path>] [--mode 2|3] [--max-pages 300] [--delay-ms 800] [--debug-response]
+  node src/cli.js collect --url <dynamicUrl> --out <basePath> [--cookie-file <path>] [--mode 2|3] [--max-pages 300] [--delay-ms 800] [--debug-response] [--save-raw]
   node src/cli.js normalize --input <jsonlPath> --out <csvPath>
   node src/cli.js slice --input <csvPath> [--out <dir>] [--size 200]
   node src/cli.js merge-approved [--slices-dir <dir>] [--out <csvPath>]
@@ -17,7 +18,7 @@ Usage:
   node src/cli.js report --input <csvPath> --oid <dynamicCommentId> [--cookie-file <path>] [--type 11] [--delay-ms 5000] [--dry-run]
 `;
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const [command, ...rest] = argv;
   const options = {};
   const positional = [];
@@ -32,7 +33,12 @@ function parseArgs(argv) {
       options[rawKey] = inlineValue;
       continue;
     }
-    options[rawKey] = rest[index + 1] ?? true;
+    const nextToken = rest[index + 1];
+    if (nextToken === undefined || nextToken.startsWith("--")) {
+      options[rawKey] = true;
+      continue;
+    }
+    options[rawKey] = nextToken;
     index += 1;
   }
   return { command, options, positional };
@@ -125,7 +131,10 @@ async function main() {
   await handler(options);
 }
 
-main().catch((error) => {
-  process.stderr.write(`${error.stack}\n`);
-  process.exitCode = 1;
-});
+const entryHref = process.argv[1] ? pathToFileURL(process.argv[1]).href : "";
+if (entryHref === import.meta.url) {
+  main().catch((error) => {
+    process.stderr.write(`${error.stack}\n`);
+    process.exitCode = 1;
+  });
+}

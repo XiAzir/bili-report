@@ -15,6 +15,12 @@ const MAX_BODY_SIZE = 10 * 1024 * 1024;
 // 采集任务状态 Map: projectId -> { running, done, error, pages, count }
 const collectJobs = new Map();
 
+function createHttpError(message, statusCode) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+}
+
 function jsonResponse(res, payload, statusCode = 200) {
   res.writeHead(statusCode, { "content-type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(payload));
@@ -27,10 +33,16 @@ function parseBody(req) {
       data += chunk;
       if (data.length > MAX_BODY_SIZE) {
         req.destroy();
-        reject(new Error("Request body too large"));
+        reject(createHttpError("Request body too large", 413));
       }
     });
-    req.on("end", () => resolve(JSON.parse(data || "{}")));
+    req.on("end", () => {
+      try {
+        resolve(JSON.parse(data || "{}"));
+      } catch {
+        reject(createHttpError("Invalid JSON body", 400));
+      }
+    });
     req.on("error", reject);
   });
 }
@@ -189,7 +201,7 @@ export async function runUiCommand(options) {
     try {
       await router(req, res);
     } catch (err) {
-      jsonResponse(res, { error: err.message }, 500);
+      jsonResponse(res, { error: err.message }, err.statusCode ?? 500);
     }
   });
 

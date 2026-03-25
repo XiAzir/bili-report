@@ -34,12 +34,66 @@ const RESPONSE_FIELDS = {
   source_url: "jump_url"
 };
 
-function extractInitialState(html) {
-  const match = html.match(/window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\});/);
-  if (!match) {
+function findInitialStateStart(html) {
+  const marker = "window.__INITIAL_STATE__";
+  const markerIndex = html.indexOf(marker);
+  if (markerIndex === -1) {
+    return -1;
+  }
+  const equalsIndex = html.indexOf("=", markerIndex + marker.length);
+  if (equalsIndex === -1) {
+    return -1;
+  }
+  return html.indexOf("{", equalsIndex + 1);
+}
+
+function extractBalancedJsonObject(source, startIndex) {
+  if (startIndex < 0 || source[startIndex] !== "{") {
+    throw new Error("Initial state JSON object start not found");
+  }
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = startIndex; index < source.length; index += 1) {
+    const char = source[index];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === "\\") {
+        escaped = true;
+        continue;
+      }
+      if (char === "\"") {
+        inString = false;
+      }
+      continue;
+    }
+    if (char === "\"") {
+      inString = true;
+      continue;
+    }
+    if (char === "{") {
+      depth += 1;
+      continue;
+    }
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(startIndex, index + 1);
+      }
+    }
+  }
+  throw new Error("Initial state JSON object is not balanced");
+}
+
+export function extractInitialState(html) {
+  const objectStart = findInitialStateStart(html);
+  if (objectStart === -1) {
     throw new Error("Cannot find window.__INITIAL_STATE__ in opus page");
   }
-  return JSON.parse(match[1]);
+  return JSON.parse(extractBalancedJsonObject(html, objectStart));
 }
 
 function extractCommentContext(initialState) {
@@ -184,6 +238,10 @@ function resolveDelayMs(options) {
     throw new Error(`Invalid --delay-ms value: ${options["delay-ms"]}`);
   }
   return delayMs;
+}
+
+function shouldSaveRawPages(options) {
+  return options["save-raw"] === true || options["save-raw"] === "true";
 }
 
 async function sleep(delayMs) {
@@ -361,7 +419,9 @@ export async function runCollectCommand(options) {
   const topReplies = pages.flatMap((page) => getByPath(page, "data.replies") ?? []);
   await collectSubReplies(dynamicUrl, commentContext, cookie, topReplies, rows, seenCommentIds, delayMs);
 
-  await writeTextFile(`${options.out}.json`, stringifyJson(pages));
+  if (shouldSaveRawPages(options)) {
+    await writeTextFile(`${options.out}.json`, stringifyJson(pages));
+  }
   await writeTextFile(`${options.out}.jsonl`, toJsonLines(rows));
   await writeTextFile(`${options.out}.csv`, toCsv(rows));
   process.stdout.write(

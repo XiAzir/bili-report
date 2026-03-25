@@ -51,12 +51,7 @@ export const SHOCK_PATTERNS = [/鬼图/, /猎奇/, /血腥/, /恶心图/];
 
 export const UNRELATED_PATTERNS = [
   /开发笔记/u,
-  /Hemlok/u,
-  /RE-45/u,
-  /P2020/u,
-  /EVA-8/u,
-  /Hardlight/u,
-  /元素爆发/u,
-  /元素战技/u,
-  /传送门/u
+  /更新日志/u,
+  /版本说明/u,
+  /补丁说明/u
 ];

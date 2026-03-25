@@ -1,7 +1,7 @@
 import { readTextFile, writeTextFile } from "../shared/fs.js";
 import { parseCsv, toCsv } from "../shared/csv.js";
 import { readJsonFile } from "../shared/json.js";
-import { DEFAULT_REASONS, REVIEW_HEADERS, ensureAllowedReason } from "../shared/reasons.js";
+import { ALLOWED_REASONS, REVIEW_HEADERS, ensureAllowedReason } from "../shared/reasons.js";
 
 function ensureOptions(options) {
   if (!options.input || !options["reason-map"]) {
@@ -21,7 +21,7 @@ export async function runAnnotateCommand(options) {
   ensureOptions(options);
   const rows = parseCsv(await readTextFile(options.input)).map(normalizeReviewRow);
   const reasonMap = await readJsonFile(options["reason-map"]);
-  const allowedReasons = reasonMap.allowedReasons ?? DEFAULT_REASONS;
+  const allowedReasons = reasonMap.allowedReasons ?? ALLOWED_REASONS;
 
   for (const row of rows) {
     ensureAllowedReason(row.reason, allowedReasons);

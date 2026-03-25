@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { classifyRow } from "../src/annotator/labelSlices.js";
+import { classifyRow, getRepeatCount } from "../src/annotator/labelSlices.js";
 
 const EMPTY_STATS = {
   dedupeCounts: new Map(),
@@ -33,7 +33,11 @@ test("classifyRow prefers abuse over spam", () => {
   assert.equal(classifyRow(row, stats), "abuse");
 });
 
-test("classifyRow marks repeated off-topic patch notes as unrelated", () => {
-  const row = createRow({ content_raw: "开发笔记：Hemlok Breach AR 精英武器 新射击模式：自动模式" });
+test("classifyRow marks generic patch notes as unrelated", () => {
+  const row = createRow({ content_raw: "开发笔记：本次更新日志与当前动态内容无关" });
   assert.equal(classifyRow(row, EMPTY_STATS), "unrelated");
+});
+
+test("getRepeatCount detects repeated chunks in the middle of text", () => {
+  assert.equal(getRepeatCount("前缀abcabcabc后缀"), 3);
 });
