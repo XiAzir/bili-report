@@ -8,9 +8,29 @@
 4. 合并需举报条目
 5. 批量向 B 站提交举报
 
+**推荐使用 Web UI 操作**：`npm run ui` 启动本地工作台，在浏览器中完成采集→规范化→切片→合并全流程，无需记忆命令行参数。
+
+支持两种使用方式：**Web UI**（推荐，步骤 1-4 可视化操作）或 **CLI**（命令行）。
+
 ---
 
-## 完整工作流程
+## 快速开始（Web UI）
+
+```powershell
+npm run ui
+```
+
+浏览器打开 `http://127.0.0.1:4311`，在 UI 中：
+
+1. 填写 B 站 Cookie 并保存
+2. 输入动态 URL，创建 Project（数据自动按动态 ID 隔离到 `data/{id}/`）
+3. 依次点击「采集」→「规范化」→「切片」
+4. 将切片文件交给 AI 打标（见下文），完成后点「合并」
+5. 使用 CLI 提交举报（见下文）
+
+---
+
+## 完整工作流程（CLI）
 
 ### 第一步：准备 Cookie
 
@@ -174,7 +194,7 @@ src/
 ├── annotator/          AI 辅助打标（labelSlices）
 ├── merger/             合并已审核条目
 ├── reporter/           举报提交
-├── reviewer/           本地 Web 审阅工作台
+├── ui/                 Web UI 工作台（采集/规范化/切片/合并 可视化入口）
 └── shared/
     ├── patterns.js     统一关键词模式库（doxxing/abuse/flamebait 等正则）
     ├── reasons.js      举报原因映射（BILI_REASON_MAP）及合法值列表（ALLOWED_REASONS）

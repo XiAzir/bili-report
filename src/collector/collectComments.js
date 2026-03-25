@@ -345,6 +345,9 @@ export async function runCollectCommand(options) {
       );
     }
     appendUniqueRows(rows, flattenComments(comments, RESPONSE_FIELDS, "replies"), seenCommentIds);
+    if (options.onProgress) {
+      options.onProgress(pages.length, rows.length);
+    }
     const hasMore = Boolean(getByPath(pageData, "data.cursor.is_end") === false);
     if (!hasMore) {
       break;

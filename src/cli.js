@@ -1,7 +1,7 @@
 import { runCollectCommand } from "./collector/collectComments.js";
 import { runNormalizeCommand } from "./normalizer/normalizeComments.js";
 import { runAnnotateCommand } from "./normalizer/prepareAnnotation.js";
-import { runReviewCommand } from "./reviewer/server.js";
+import { runUiCommand } from "./ui/server.js";
 import { runSliceCommand } from "./slicer/sliceComments.js";
 import { runMergeApprovedCommand } from "./merger/mergeApproved.js";
 import { runReportCommand } from "./reporter/submitReports.js";
@@ -13,7 +13,7 @@ Usage:
   node src/cli.js slice --input <csvPath> [--out <dir>] [--size 200]
   node src/cli.js merge-approved [--slices-dir <dir>] [--out <csvPath>]
   node src/cli.js annotate --input <csvPath> --reason-map <path>
-  node src/cli.js review --input <csvPath> [--port 4310] [--reason-map <path>]
+  node src/cli.js ui [--port 4311]
   node src/cli.js report --input <csvPath> --oid <dynamicCommentId> [--cookie-file <path>] [--type 11] [--delay-ms 5000] [--dry-run]
 `;
 
@@ -111,7 +111,7 @@ async function main() {
     collect: runCollectCommand,
     normalize: runNormalizeCommand,
     annotate: runAnnotateCommand,
-    review: runReviewCommand,
+    ui: runUiCommand,
     slice: runSliceCommand,
     "merge-approved": runMergeApprovedCommand,
     report: runReportCommand

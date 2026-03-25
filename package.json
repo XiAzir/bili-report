@@ -7,7 +7,7 @@
     "collect": "node src/cli.js collect",
     "normalize": "node src/cli.js normalize",
     "annotate": "node src/cli.js annotate",
-    "review": "node src/cli.js review",
+    "ui": "node src/cli.js ui",
     "slice": "node src/cli.js slice",
     "merge-approved": "node src/cli.js merge-approved",
     "report": "node src/cli.js report",
