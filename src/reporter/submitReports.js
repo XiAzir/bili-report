@@ -110,6 +110,7 @@ export async function runReportCommand(options) {
 
   let successCount = 0;
   let skipCount = 0;
+  const onProgress = options.onProgress ?? (() => {});
 
   for (let i = 0; i < toReport.length; i += 1) {
     const row = toReport[i];
@@ -157,6 +158,7 @@ export async function runReportCommand(options) {
       process.stdout.write(`错误 ${error.message}\n`);
       skipCount += 1;
     }
+    onProgress(successCount, skipCount, toReport.length);
 
     if (i < toReport.length - 1) {
       await sleep(delayMs);

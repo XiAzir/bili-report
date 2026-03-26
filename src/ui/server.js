@@ -6,6 +6,7 @@ import { runCollectCommand } from "../collector/collectComments.js";
 import { runNormalizeCommand } from "../normalizer/normalizeComments.js";
 import { runSliceCommand } from "../slicer/sliceComments.js";
 import { runMergeApprovedCommand } from "../merger/mergeApproved.js";
+import { runReportCommand } from "../reporter/submitReports.js";
 import { renderHtml } from "./html.js";
 
 const DEFAULT_PORT = 4311;
@@ -14,6 +15,8 @@ const MAX_BODY_SIZE = 10 * 1024 * 1024;
 
 // 采集任务状态 Map: projectId -> { running, done, error, pages, count }
 const collectJobs = new Map();
+// 举报任务状态 Map: projectId -> { running, done, error, success, skip, total }
+const reportJobs = new Map();
 
 function createHttpError(message, statusCode) {
   const error = new Error(message);
@@ -194,6 +197,59 @@ async function handleSliceList(id, res) {
   jsonResponse(res, { slices });
 }
 
+async function handleReportStart(id, req, res) {
+  const body = await parseBody(req);
+  const paths = projectPaths(id);
+
+  if (reportJobs.get(id)?.running) {
+    jsonResponse(res, { error: "举报正在进行中" }, 409);
+    return;
+  }
+
+  const job = { running: true, done: false, error: null, success: 0, skip: 0, total: 0 };
+  reportJobs.set(id, job);
+
+  const options = {
+    input: paths.approvedCsv,
+    oid: body.oid,
+    "cookie-file": COOKIE_FILE,
+    type: String(body.type ?? "11"),
+    "delay-ms": Number(body.delayMs ?? 10000),
+    "dry-run": body.dryRun ?? false,
+    onProgress(success, skip, total) {
+      job.success = success;
+      job.skip = skip;
+      job.total = total;
+    }
+  };
+
+  runReportCommand(options).then(() => {
+    job.running = false;
+    job.done = true;
+  }).catch((err) => {
+    job.running = false;
+    job.error = err.message;
+  });
+
+  jsonResponse(res, { ok: true, started: true });
+}
+
+async function handleReportStatus(id, res) {
+  const job = reportJobs.get(id);
+  if (!job) {
+    jsonResponse(res, { running: false, done: false, error: null, success: 0, skip: 0, total: 0 });
+    return;
+  }
+  jsonResponse(res, {
+    running: job.running,
+    done: job.done,
+    error: job.error,
+    success: job.success,
+    skip: job.skip,
+    total: job.total
+  });
+}
+
 export async function runUiCommand(options) {
   const port = Number(options.port ?? DEFAULT_PORT);
 
@@ -275,6 +331,16 @@ async function router(req, res) {
     // GET /api/project/:id/slices
     if (method === "GET" && parts[3] === "slices") {
       await handleSliceList(id, res);
+      return;
+    }
+    // POST /api/project/:id/report
+    if (method === "POST" && parts[3] === "report") {
+      await handleReportStart(id, req, res);
+      return;
+    }
+    // GET /api/project/:id/report/status
+    if (method === "GET" && parts[3] === "report" && parts[4] === "status") {
+      await handleReportStatus(id, res);
       return;
     }
   }

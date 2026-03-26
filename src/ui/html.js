@@ -144,6 +144,31 @@ export function renderHtml() {
       </div>
     </div>
 
+    <!-- 步骤五：举报 -->
+    <div class="card">
+      <div class="step-header">
+        <div class="step-num">5</div>
+        <div class="step-title">举报</div>
+        <span class="status-tag" id="report-status-tag">未开始</span>
+      </div>
+      <p style="font-size:13px;color:#555;margin-bottom:10px">将 approved.csv 中 status=approved 的条目逐条提交举报</p>
+      <label>动态评论区 OID（动态 ID）</label>
+      <input type="text" id="report-oid" placeholder="123456789012345678" />
+      <div class="row" style="margin-top:10px">
+        <div>
+          <label>请求间隔 (ms)</label>
+          <input type="number" id="report-delay" value="10000" min="1000" style="width:120px" />
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:8px">
+          <label style="margin:0"><input type="checkbox" id="report-dryrun" /> Dry-run（不实际发送）</label>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <button class="btn-primary" id="report-btn" onclick="startReport()">开始举报</button>
+      </div>
+      <div id="report-progress" class="hint" style="margin-top:8px"></div>
+    </div>
+
     <!-- 步骤四：合并 -->
     <div class="card">
       <div class="step-header">
@@ -181,7 +206,7 @@ async function saveCookie() {
 // ── Project ──
 async function loadProject() {
   const url = document.getElementById('project-url').value.trim();
-  const match = url.match(/opus\/(\d+)/);
+  const match = url.match(/opus\\/(\\d+)/);
   if (!match) { alert('无法从 URL 中提取动态 ID，请检查链接格式'); return; }
   const id = match[1];
   currentProjectId = id;
@@ -208,6 +233,8 @@ async function loadProject() {
   setTag('normalize-status-tag', 'idle', '未开始');
   setTag('slice-status-tag', 'idle', '未开始');
   setTag('merge-status-tag', 'idle', '未开始');
+  setTag('report-status-tag', 'idle', '未开始');
+  document.getElementById('report-oid').value = id;
 }
 
 // ── 工具函数 ──
@@ -334,6 +361,49 @@ async function startMerge() {
     setTag('merge-status-tag', 'done', '完成');
     resultEl.style.color = '#0a5f38';
     resultEl.textContent = '已合并到 ' + r.out;
+  }
+}
+
+// ── 步骤五：举报 ──
+let reportPollTimer = null;
+
+async function startReport() {
+  if (!currentProjectId) return;
+  const oid = document.getElementById('report-oid').value.trim();
+  if (!oid) { alert('请填写动态 OID'); return; }
+  const btn = document.getElementById('report-btn');
+  btn.disabled = true;
+  setTag('report-status-tag', 'running', '运行中...');
+  document.getElementById('report-progress').textContent = '正在提交...';
+
+  await fetch('/api/project/' + currentProjectId + '/report', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      oid,
+      delayMs: document.getElementById('report-delay').value,
+      dryRun: document.getElementById('report-dryrun').checked
+    })
+  });
+
+  reportPollTimer = setInterval(pollReportStatus, 3000);
+}
+
+async function pollReportStatus() {
+  const r = await fetch('/api/project/' + currentProjectId + '/report/status').then(r => r.json());
+  const progressEl = document.getElementById('report-progress');
+  if (r.running) {
+    progressEl.textContent = '已成功 ' + r.success + ' 条，跳过 ' + r.skip + ' 条，共 ' + r.total + ' 条';
+    return;
+  }
+  clearInterval(reportPollTimer);
+  document.getElementById('report-btn').disabled = false;
+  if (r.error) {
+    setTag('report-status-tag', 'error', '失败');
+    progressEl.textContent = '错误：' + r.error;
+  } else if (r.done) {
+    setTag('report-status-tag', 'done', '完成');
+    progressEl.textContent = '完成：成功 ' + r.success + ' 条，跳过 ' + r.skip + ' 条';
   }
 }
 
