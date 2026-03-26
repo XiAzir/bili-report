@@ -427,4 +427,5 @@ export async function runCollectCommand(options) {
   process.stdout.write(
     `Collected ${rows.length} comments to ${options.out}.jsonl (comment_id=${commentContext.commentId}, type=${commentContext.commentType}, mode=${mode}, pages=${pages.length}, delay_ms=${delayMs})\n`
   );
+  return commentContext;
 }

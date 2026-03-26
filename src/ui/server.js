@@ -131,9 +131,17 @@ async function handleCollectStart(id, req, res) {
   };
 
   // 异步执行，不 await
-  runCollectCommand(options).then(() => {
+  runCollectCommand(options).then(async (commentContext) => {
     job.running = false;
     job.done = true;
+    if (commentContext?.commentId) {
+      const configPath = `data/${id}/ui-config.json`;
+      const existing = await readTextFile(configPath).catch(() => "{}");
+      const config = JSON.parse(existing);
+      config.reportOid = commentContext.commentId;
+      config.reportType = String(commentContext.commentType ?? "17");
+      await writeTextFile(configPath, JSON.stringify(config, null, 2));
+    }
   }).catch((err) => {
     job.running = false;
     job.error = err.message;

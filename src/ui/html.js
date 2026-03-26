@@ -144,31 +144,6 @@ export function renderHtml() {
       </div>
     </div>
 
-    <!-- 步骤五：举报 -->
-    <div class="card">
-      <div class="step-header">
-        <div class="step-num">5</div>
-        <div class="step-title">举报</div>
-        <span class="status-tag" id="report-status-tag">未开始</span>
-      </div>
-      <p style="font-size:13px;color:#555;margin-bottom:10px">将 approved.csv 中 status=approved 的条目逐条提交举报</p>
-      <label>动态评论区 OID（动态 ID）</label>
-      <input type="text" id="report-oid" placeholder="123456789012345678" />
-      <div class="row" style="margin-top:10px">
-        <div>
-          <label>请求间隔 (ms)</label>
-          <input type="number" id="report-delay" value="10000" min="1000" style="width:120px" />
-        </div>
-        <div style="display:flex;align-items:flex-end;gap:8px">
-          <label style="margin:0"><input type="checkbox" id="report-dryrun" /> Dry-run（不实际发送）</label>
-        </div>
-      </div>
-      <div style="margin-top:12px">
-        <button class="btn-primary" id="report-btn" onclick="startReport()">开始举报</button>
-      </div>
-      <div id="report-progress" class="hint" style="margin-top:8px"></div>
-    </div>
-
     <!-- 步骤四：合并 -->
     <div class="card">
       <div class="step-header">
@@ -181,6 +156,30 @@ export function renderHtml() {
         <button class="btn-primary" onclick="startMerge()">合并已打标条目</button>
       </div>
       <div id="merge-result" class="merge-result"></div>
+    </div>
+
+    <!-- 步骤五：举报 -->
+    <div class="card">
+      <div class="step-header">
+        <div class="step-num">5</div>
+        <div class="step-title">举报</div>
+        <span class="status-tag" id="report-status-tag">未开始</span>
+      </div>
+      <p style="font-size:13px;color:#555;margin-bottom:10px">将 approved.csv 中 status=approved 的条目逐条提交举报</p>
+      <div id="report-oid-hint" class="hint" style="margin-bottom:8px"></div>
+      <div class="row" style="margin-top:4px">
+        <div>
+          <label>请求间隔 (ms)</label>
+          <input type="number" id="report-delay" value="10000" min="1000" style="width:120px" />
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:8px">
+          <label style="margin:0"><input type="checkbox" id="report-dryrun" /> Dry-run（不实际发送）</label>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <button class="btn-primary" id="report-btn" onclick="startReport()">开始举报</button>
+      </div>
+      <div id="report-progress" class="hint" style="margin-top:8px"></div>
     </div>
 
   </div>
@@ -234,7 +233,12 @@ async function loadProject() {
   setTag('slice-status-tag', 'idle', '未开始');
   setTag('merge-status-tag', 'idle', '未开始');
   setTag('report-status-tag', 'idle', '未开始');
-  document.getElementById('report-oid').value = id;
+  const oidHint = document.getElementById('report-oid-hint');
+  if (cfg.reportOid) {
+    oidHint.textContent = 'OID：' + cfg.reportOid + '（type=' + (cfg.reportType || '17') + '，采集时自动获取）';
+  } else {
+    oidHint.textContent = '完成采集步骤后，OID 将自动填充';
+  }
 }
 
 // ── 工具函数 ──
@@ -369,8 +373,10 @@ let reportPollTimer = null;
 
 async function startReport() {
   if (!currentProjectId) return;
-  const oid = document.getElementById('report-oid').value.trim();
-  if (!oid) { alert('请填写动态 OID'); return; }
+  const r = await fetch('/api/project/' + currentProjectId + '/config').then(r => r.json());
+  const oid = r.config?.reportOid;
+  const type = r.config?.reportType ?? '17';
+  if (!oid) { alert('尚未获取到 OID，请先完成采集步骤'); return; }
   const btn = document.getElementById('report-btn');
   btn.disabled = true;
   setTag('report-status-tag', 'running', '运行中...');
@@ -381,6 +387,7 @@ async function startReport() {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       oid,
+      type,
       delayMs: document.getElementById('report-delay').value,
       dryRun: document.getElementById('report-dryrun').checked
     })
